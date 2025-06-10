@@ -1,13 +1,7 @@
 package cl.ecomarket.ms_productos.util;
 
-import cl.ecomarket.ms_productos.model.Permiso;
-import cl.ecomarket.ms_productos.model.Rol;
-import cl.ecomarket.ms_productos.model.Usuario;
-import cl.ecomarket.ms_productos.model.Producto;
-import cl.ecomarket.ms_productos.repository.PermisoRepository;
-import cl.ecomarket.ms_productos.repository.ProductoRepository;
-import cl.ecomarket.ms_productos.repository.RolRepository;
-import cl.ecomarket.ms_productos.repository.UsuarioRepository;
+import cl.ecomarket.ms_productos.model.*;
+import cl.ecomarket.ms_productos.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -15,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
@@ -28,18 +23,28 @@ public class DataInitializer implements CommandLineRunner {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PermisoRepository permisoRepository;
-    private final ProductoRepository productoRepository; // Añadido
+    private final ProductoRepository productoRepository;
+    private final DireccionRepository direccionRepository;
+    private final CarritoCompraRepository carritoCompraRepository;
+    private final PedidoRepository pedidoRepository;
+    private final DetallePedidoRepository detallePedidoRepository;
+    private final ItemCarritoRepository itemCarritoRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public DataInitializer(UsuarioRepository usuarioRepository,
-                           RolRepository rolRepository,
-                           PermisoRepository permisoRepository,
-                           ProductoRepository productoRepository, // Añadido
-                           PasswordEncoder passwordEncoder) {
+    public DataInitializer(UsuarioRepository usuarioRepository, RolRepository rolRepository,
+                           PermisoRepository permisoRepository, ProductoRepository productoRepository,
+                           DireccionRepository direccionRepository, CarritoCompraRepository carritoCompraRepository,
+                           PedidoRepository pedidoRepository, DetallePedidoRepository detallePedidoRepository,
+                           ItemCarritoRepository itemCarritoRepository, PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.permisoRepository = permisoRepository;
-        this.productoRepository = productoRepository; // Añadido
+        this.productoRepository = productoRepository;
+        this.direccionRepository = direccionRepository;
+        this.carritoCompraRepository = carritoCompraRepository;
+        this.pedidoRepository = pedidoRepository;
+        this.detallePedidoRepository = detallePedidoRepository;
+        this.itemCarritoRepository = itemCarritoRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -48,111 +53,99 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
         log.info("Ejecutando DataInitializer para cargar datos iniciales...");
 
+        // Permisos
         Permiso pLeerProductos = crearPermisoSiNoExiste("PRODUCTOS_LEER");
         Permiso pCrearProductos = crearPermisoSiNoExiste("PRODUCTOS_CREAR");
         Permiso pEditarProductos = crearPermisoSiNoExiste("PRODUCTOS_EDITAR");
         Permiso pEliminarProductos = crearPermisoSiNoExiste("PRODUCTOS_ELIMINAR");
-
         Permiso pGestionarUsuarios = crearPermisoSiNoExiste("USUARIOS_GESTIONAR");
         Permiso pGestionarRoles = crearPermisoSiNoExiste("ROLES_GESTIONAR");
         Permiso pGestionarPermisos = crearPermisoSiNoExiste("PERMISOS_GESTIONAR");
 
-        Rol adminRol = crearRolSiNoExiste("ADMINISTRADOR_SISTEMA",
-                new HashSet<>(Arrays.asList(
-                        pLeerProductos, pCrearProductos, pEditarProductos, pEliminarProductos,
-                        pGestionarUsuarios, pGestionarRoles, pGestionarPermisos
-                )));
+        // Roles
+        Rol adminRol = crearRolSiNoExiste("ADMINISTRADOR_SISTEMA", Set.of(pLeerProductos, pCrearProductos, pEditarProductos, pEliminarProductos,
+                pGestionarUsuarios, pGestionarRoles, pGestionarPermisos));
+        Rol gerenteRol = crearRolSiNoExiste("GERENTE_TIENDA", Set.of(pLeerProductos, pCrearProductos, pEditarProductos));
+        Rol empleadoRol = crearRolSiNoExiste("EMPLEADO_VENTAS", Set.of(pLeerProductos));
+        Rol logisticaRol = crearRolSiNoExiste("LOGISTICA", Set.of(pLeerProductos));
 
-        Rol gerenteRol = crearRolSiNoExiste("GERENTE_TIENDA",
-                new HashSet<>(Arrays.asList(
-                        pLeerProductos, pCrearProductos, pEditarProductos
-                )));
+        // Usuarios
+        crearUsuarioSiNoExiste("admin", "Administrador", "admin@example.com", "admin123", adminRol);
+        crearUsuarioSiNoExiste("gerente", "Gerente", "gerente@example.com", "gerente123", gerenteRol);
+        crearUsuarioSiNoExiste("empleado", "Empleado", "empleado@example.com", "empleado123", empleadoRol);
+        crearUsuarioSiNoExiste("logistica", "Logistica", "logistica@example.com", "logistica123", logisticaRol);
 
-        Rol empleadoRol = crearRolSiNoExiste("EMPLEADO_VENTAS",
-                new HashSet<>(Arrays.asList(
-                        pLeerProductos
-                )));
+        // Productos
+        Producto producto1 = crearProductoSiNoExiste("PROD-001", "Producto 1", "Descripción 1", "Electronica", 100.0, 10);
+        Producto producto2 = crearProductoSiNoExiste("PROD-002", "Producto 2", "Descripción 2", "Ropa", 50.0, 5);
 
-        Rol logisticaRol = crearRolSiNoExiste("LOGISTICA",
-                new HashSet<>(Arrays.asList(
-                        pLeerProductos
-                )));
+        // Direcciones
+        Usuario usuarioAdmin = usuarioRepository.findByUsername("admin").orElseThrow();
+        Direccion direccion1 = crearDireccionSiNoExiste("Calle Principal", "123", "Santiago", "Santiago", "Metropolitana", "7500000", usuarioAdmin);
 
-        crearUsuarioSiNoExiste("admin", "Administrador del Sistema", "admin@ecomarket.cl", "admin123", adminRol);
-        crearUsuarioSiNoExiste("gerente01", "Gerente Ejemplo Uno", "gerente01@ecomarket.cl", "gerente123", gerenteRol);
-        crearUsuarioSiNoExiste("empleado01", "Empleado Ejemplo Uno", "empleado01@ecomarket.cl", "empleado123", empleadoRol);
-        crearUsuarioSiNoExiste("logistica01", "Logistica Ejemplo Uno", "logistica01@ecomarket.cl", "logistica123", logisticaRol);
+        // Carrito de Compras
+        CarritoCompra carrito1 = crearCarritoCompraSiNoExiste(usuarioAdmin, Set.of(crearItemCarritoSiNoExiste(producto1, 2), crearItemCarritoSiNoExiste(producto2, 1)));
 
-        // Datos de prueba para Producto
-        crearProductoSiNoExiste("PROD-001", "Producto 1", "Descripción del producto 1", "Electronica", 100.0, 10);
-        crearProductoSiNoExiste("PROD-002", "Producto 2", "Descripción del producto 2", "Ropa", 50.0, 5);
-        crearProductoSiNoExiste("PROD-003", "Producto 3", "Descripción del producto 3", "Electronica", 200.0, 2);
+        // Pedidos
+        Pedido pedido1 = crearPedidoSiNoExiste(LocalDateTime.now(), "COMPLETADO", 250.0, usuarioAdmin, direccion1, Set.of(
+                crearDetallePedidoSiNoExiste(producto1, 1, 100.0),
+                crearDetallePedidoSiNoExiste(producto2, 1, 50.0)
+        ));
 
         log.info("DataInitializer finalizado.");
     }
 
-    private void crearUsuarioSiNoExiste(String username, String nombreCompleto, String email, String password, Rol rol) {
-        if (!usuarioRepository.existsByUsername(username)) {
-            Usuario user = new Usuario();
-            user.setUsername(username);
-            user.setNombreCompleto(nombreCompleto);
-            user.setEmail(email);
-            user.setPassword(passwordEncoder.encode(password));
-            user.setActivo(true);
-            user.setRoles(new HashSet<>(Set.of(rol)));
-            usuarioRepository.save(user);
-            log.info("Usuario '{}' creado.", username);
-        } else {
-            log.info("Usuario '{}' ya existe.", username);
-        }
+    // Métodos auxiliares para crear entidades (simplificados)
+    private Permiso crearPermisoSiNoExiste(String nombre) {
+        return permisoRepository.findByNombre(nombre.toUpperCase()).orElseGet(() -> permisoRepository.save(new Permiso(null, nombre.toUpperCase())));
     }
 
-    private Rol crearRolSiNoExiste(String nombreRol, Set<Permiso> permisos) {
-        String nombreRolUpper = nombreRol.toUpperCase().replace(" ", "_");
-        Optional<Rol> rolOpt = rolRepository.findByNombre(nombreRolUpper);
-        if (rolOpt.isEmpty()) {
-            Rol nuevoRol = new Rol();
-            nuevoRol.setNombre(nombreRolUpper);
-            if (permisos != null && !permisos.isEmpty()) {
-                nuevoRol.setPermisos(new HashSet<>(permisos));
-            } else {
-                nuevoRol.setPermisos(new HashSet<>());
-            }
-            rolRepository.save(nuevoRol);
-            Rol rolGuardado = rolRepository.save(nuevoRol);
-            log.info("Rol '{}' creado con ID: {}.", rolGuardado.getNombre(), rolGuardado.getId());
-            return rolGuardado;
-        }
-        Rol rolExistente = rolOpt.get();
-        return rolExistente;
+    private Rol crearRolSiNoExiste(String nombre, Set<Permiso> permisos) {
+        return rolRepository.findByNombre(nombre.toUpperCase().replace(" ", "_")).orElseGet(() -> rolRepository.save(new Rol(null, nombre.toUpperCase().replace(" ", "_"), permisos)));
     }
 
-    private Permiso crearPermisoSiNoExiste(String nombrePermiso) {
-        String nombrePermisoUpper = nombrePermiso.toUpperCase().replace(" ", "_");
-        Optional<Permiso> permisoOpt = permisoRepository.findByNombre(nombrePermisoUpper);
-        if (permisoOpt.isEmpty()) {
-            Permiso nuevoPermiso = new Permiso();
-            nuevoPermiso.setNombre(nombrePermisoUpper);
-            permisoRepository.save(nuevoPermiso);
-            log.info("Permiso '{}' creado.", nombrePermisoUpper);
-            return nuevoPermiso;
-        }
-        return permisoOpt.get();
+    private Usuario crearUsuarioSiNoExiste(String username, String nombreCompleto, String email, String password, Rol rol) {
+        return usuarioRepository.findByUsername(username).orElseGet(() -> usuarioRepository.save(new Usuario(null, username, nombreCompleto, email, passwordEncoder.encode(password), true, Set.of(rol), new HashSet<>(), new HashSet<>(), null)));
     }
 
-    private void crearProductoSiNoExiste(String codigo, String nombre, String descripcion, String categoria, Double precio, Integer stock) {
-        if (!productoRepository.existsByCodigo(codigo)) { // Corregido
-            Producto producto = new Producto(); // Corregido
-            producto.setCodigo(codigo);
-            producto.setNombre(nombre);
-            producto.setDescripcion(descripcion);
-            producto.setCategoria(categoria);
-            producto.setPrecio(precio);
-            producto.setStock(stock);
-            productoRepository.save(producto); // Corregido
-            log.info("Producto '{}' creado.", codigo);
-        } else {
-            log.info("Producto '{}' ya existe.", codigo);
-        }
+    private Producto crearProductoSiNoExiste(String codigo, String nombre, String descripcion, String categoria, Double precio, Integer stock) {
+        return productoRepository.findByCodigo(codigo).orElseGet(() -> productoRepository.save(new Producto(null, codigo, nombre, descripcion, categoria, precio, stock)));
+    }
+
+    private Direccion crearDireccionSiNoExiste(String calle, String numero, String comuna, String ciudad, String region, String codigoPostal, Usuario usuario) {
+        return direccionRepository.save(new Direccion(null, calle, numero, comuna, ciudad, region, codigoPostal, usuario));
+    }
+
+    private CarritoCompra crearCarritoCompraSiNoExiste(Usuario usuario, Set<ItemCarrito> items) {
+        CarritoCompra carrito = new CarritoCompra();
+        carrito.setUsuario(usuario);
+        carrito.setItemsCarrito(items);
+        return carritoCompraRepository.save(carrito);
+    }
+
+    private ItemCarrito crearItemCarritoSiNoExiste(Producto producto, Integer cantidad) {
+        ItemCarrito item = new ItemCarrito();
+        item.setProducto(producto);
+        item.setCantidad(cantidad);
+        return itemCarritoRepository.save(item);
+    }
+
+    private Pedido crearPedidoSiNoExiste(LocalDateTime fechaPedido, String estado, Double total, Usuario usuario, Direccion direccionEnvio, Set<DetallePedido> detalles) {
+        Pedido pedido = new Pedido();
+        pedido.setFechaPedido(fechaPedido);
+        pedido.setEstado(estado);
+        pedido.setTotal(total);
+        pedido.setUsuario(usuario);
+        pedido.setDireccionEnvio(direccionEnvio);
+        pedido.setDetallesPedido(detalles);
+        return pedidoRepository.save(pedido);
+    }
+
+    private DetallePedido crearDetallePedidoSiNoExiste(Producto producto, Integer cantidad, Double precioUnitario) {
+        DetallePedido detalle = new DetallePedido();
+        detalle.setProducto(producto);
+        detalle.setCantidad(cantidad);
+        detalle.setPrecioUnitario(precioUnitario);
+        return detallePedidoRepository.save(detalle);
     }
 }
