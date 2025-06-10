@@ -10,9 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 @Component
@@ -83,17 +81,18 @@ public class DataInitializer implements CommandLineRunner {
         Usuario usuarioAdmin = usuarioRepository.findByUsername("admin").orElseThrow();
         Direccion direccion1 = crearDireccionSiNoExiste("Calle Principal", "123", "Santiago", "Santiago", "Metropolitana", "7500000", usuarioAdmin);
 
-        // Carrito de Compras
-        CarritoCompra carrito1 = crearCarritoCompraSiNoExiste(usuarioAdmin, Set.of(crearItemCarritoSiNoExiste(producto1, 2), crearItemCarritoSiNoExiste(producto2, 1)));
-
-        // Pedidos
-        Pedido pedido1 = crearPedidoSiNoExiste(LocalDateTime.now(), "COMPLETADO", 250.0, usuarioAdmin, direccion1, Set.of(
-                crearDetallePedidoSiNoExiste(producto1, 1, 100.0),
-                crearDetallePedidoSiNoExiste(producto2, 1, 50.0)
+        crearCarritoCompraSiNoExiste(usuarioAdmin, Set.of(
+            crearItemCarritoSiNoExiste(producto1, 2), 
+            crearItemCarritoSiNoExiste(producto2, 1)
         ));
 
-        log.info("DataInitializer finalizado.");
-    }
+        crearPedidoSiNoExiste(LocalDateTime.now(), "COMPLETADO", 250.0, usuarioAdmin, direccion1, Set.of(
+            crearDetallePedidoSiNoExiste(producto1, 1, 100.0),
+            crearDetallePedidoSiNoExiste(producto2, 1, 50.0)
+        ));
+
+                log.info("DataInitializer finalizado.");
+            }
 
     // Métodos auxiliares para crear entidades (simplificados)
     private Permiso crearPermisoSiNoExiste(String nombre) {
