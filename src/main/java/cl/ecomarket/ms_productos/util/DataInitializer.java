@@ -4,6 +4,7 @@ import cl.ecomarket.ms_productos.model.Permiso;
 import cl.ecomarket.ms_productos.model.Rol;
 import cl.ecomarket.ms_productos.model.Usuario;
 import cl.ecomarket.ms_productos.repository.PermisoRepository;
+import cl.ecomarket.ms_productos.repository.ProductoRepository;
 import cl.ecomarket.ms_productos.repository.RolRepository;
 import cl.ecomarket.ms_productos.repository.UsuarioRepository;
 import org.slf4j.Logger;
@@ -26,15 +27,18 @@ public class DataInitializer implements CommandLineRunner {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PermisoRepository permisoRepository;
+    private final ProductoRepository productoRepository; // Añadido
     private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(UsuarioRepository usuarioRepository,
                            RolRepository rolRepository,
                            PermisoRepository permisoRepository,
+                           ProductoRepository productoRepository, // Añadido
                            PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.permisoRepository = permisoRepository;
+        this.productoRepository = productoRepository; // Añadido
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -136,15 +140,15 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void crearProductoSiNoExiste(String codigo, String nombre, String descripcion, String categoria, Double precio, Integer stock) {
-        if (!usuarioRepository.existsByUsername(codigo)) {
-            cl.ecomarket.ms_productos.model.Producto producto = new cl.ecomarket.ms_productos.model.Producto();
+        if (!productoRepository.existsByCodigo(codigo)) { // Corregido
+            Producto producto = new Producto(); // Corregido
             producto.setCodigo(codigo);
             producto.setNombre(nombre);
             producto.setDescripcion(descripcion);
             producto.setCategoria(categoria);
             producto.setPrecio(precio);
             producto.setStock(stock);
-            usuarioRepository.save(producto);
+            productoRepository.save(producto); // Corregido
             log.info("Producto '{}' creado.", codigo);
         } else {
             log.info("Producto '{}' ya existe.", codigo);
