@@ -3,6 +3,7 @@ package cl.ecomarket.ms_productos.util;
 import cl.ecomarket.ms_productos.model.Permiso;
 import cl.ecomarket.ms_productos.model.Rol;
 import cl.ecomarket.ms_productos.model.Usuario;
+import cl.ecomarket.ms_productos.model.Producto;
 import cl.ecomarket.ms_productos.repository.PermisoRepository;
 import cl.ecomarket.ms_productos.repository.ProductoRepository;
 import cl.ecomarket.ms_productos.repository.RolRepository;
